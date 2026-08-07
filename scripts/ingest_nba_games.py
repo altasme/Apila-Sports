@@ -16,13 +16,11 @@ source without a different provider.
 Requires a free API key from https://app.balldontlie.io (their v1 API is
 key-gated). Pass it via --api-key or the BALLDONTLIE_API_KEY env var.
 
-NOTE: this was written from balldontlie's documented API contract, not
-verified against a live call -- this repo's dev sandbox has no external
-network access at all, including to this API. If a field name or the
-auth header format has changed, that'll surface as an ingestion error on
-your first run. Start with one recent season to sanity check before
-pulling several years:
-    python scripts/ingest_nba_games.py --seasons 2023 --api-key YOUR_KEY
+The free tier is rate-limited to 5 requests/minute, so pulling a full
+~1,230-game season (13 pages at 100/page) takes a few minutes -- the
+script paces itself at ~13s between pages and backs off further on a 429
+rather than failing. This is expected; a season isn't stuck just because
+it's slow.
 
 Also note: team ids here are balldontlie's own scheme, not stats.nba.com's.
 Don't mix rows from the old nba_api-based ingestion into the same
@@ -49,6 +47,8 @@ from apila.db import get_engine, get_session  # noqa: E402
 from apila.store import PointInTimeStore  # noqa: E402
 
 API_BASE = "https://api.balldontlie.io/v1"
+REQUEST_DELAY_SECONDS = 13  # free tier is 5 req/min -- 12s is the floor, pad a bit
+RATE_LIMIT_BACKOFF_SECONDS = 20  # fallback wait on a 429 with no Retry-After header
 
 
 def fetch_season_games(season: int, api_key: str) -> list[dict]:
@@ -65,18 +65,33 @@ def fetch_season_games(season: int, api_key: str) -> list[dict]:
         if cursor is not None:
             params["cursor"] = cursor
 
-        resp = requests.get(f"{API_BASE}/games", headers=headers, params=params, timeout=30)
-        resp.raise_for_status()
-        payload = resp.json()
-
+        payload = _get_with_retry(f"{API_BASE}/games", headers, params)
         games.extend(payload["data"])
 
         cursor = payload.get("meta", {}).get("next_cursor")
         if not cursor:
             break
-        time.sleep(0.25)  # stay well under the free-tier rate limit
+        time.sleep(REQUEST_DELAY_SECONDS)
 
     return games
+
+
+def _get_with_retry(url: str, headers: dict, params: dict, max_retries: int = 5) -> dict:
+    """balldontlie's free tier is rate-limited (5 req/min as of writing) --
+    a 429 here is expected mid-pull, not a failure. Back off and retry
+    rather than aborting the whole ingestion over it.
+    """
+    for attempt in range(max_retries):
+        resp = requests.get(url, headers=headers, params=params, timeout=30)
+        if resp.status_code != 429:
+            resp.raise_for_status()
+            return resp.json()
+
+        retry_after = float(resp.headers.get("Retry-After", RATE_LIMIT_BACKOFF_SECONDS))
+        print(f"  rate limited, waiting {retry_after:.0f}s (attempt {attempt + 1}/{max_retries})...")
+        time.sleep(retry_after)
+
+    raise RuntimeError(f"Still rate limited after {max_retries} retries -- try again later")
 
 
 def transform(games: list[dict], season: int) -> pd.DataFrame:

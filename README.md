@@ -114,12 +114,11 @@ used. Team ids also come from balldontlie's own scheme — don't mix in
 rows from an old nba_api-based ingestion for the same `sport="nba"`, or
 the same real-world team will get split across two different `team_id`s.
 
-This was written from balldontlie's documented API contract, not a live
-call — this repo's dev sandbox has no external network access at all, not
-even to test it. Start with one recent season to sanity check before
-pulling several years; if a field name or the auth header format has
-drifted from what's here, it'll surface immediately as an ingestion
-error.
+Confirmed working end-to-end (auth header, field names, cursor pagination
+all correct) against a real Codespaces run. The free tier is rate-limited
+to 5 requests/minute, so a full ~1,230-game season (13 pages) takes a few
+minutes — the script paces itself at ~13s between pages and backs off
+further on a 429 rather than failing. That's expected, not stuck.
 
 There's no equivalent live-ingestion script for soccer yet — the data
 source is undetermined (see proposal section 4.2's options), so soccer
