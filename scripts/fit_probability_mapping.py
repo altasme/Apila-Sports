@@ -17,9 +17,9 @@ ProbabilityMapping. Pass --three-way for soccer, where a draw is a real
 third outcome, to fit a ThreeWayProbabilityMapping instead.
 
 Usage:
-    python scripts/fit_probability_mapping.py --sport nba --before 2023-10-01 \
+    python scripts/fit_probability_mapping.py --sport nba --before 2025-10-01 \
         --engine-version v1.0 --out apila/mappings/nba_v1_0.json
-    python scripts/fit_probability_mapping.py --sport soccer --before 2023-10-01 \
+    python scripts/fit_probability_mapping.py --sport soccer --before 2025-10-01 \
         --three-way --engine-version v1.0 --out apila/mappings/soccer_v1_0.json
 """
 from __future__ import annotations

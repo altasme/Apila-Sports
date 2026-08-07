@@ -28,7 +28,7 @@ sport="nba" data -- the same team would get two different team_ids and
 silently split its rating history across them.
 
 Usage:
-    python scripts/ingest_nba_games.py --seasons 2021 2022 2023 --api-key YOUR_KEY
+    python scripts/ingest_nba_games.py --seasons 2022 2023 2024 2025 --api-key YOUR_KEY
 """
 from __future__ import annotations
 

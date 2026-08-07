@@ -91,7 +91,7 @@ pytest
 
 ```bash
 pip install -e .[ingest]
-python scripts/ingest_nba_games.py --seasons 2021 2022 2023 --api-key YOUR_KEY
+python scripts/ingest_nba_games.py --seasons 2022 2023 2024 2025 --api-key YOUR_KEY
 ```
 
 Pulls from [balldontlie.io](https://app.balldontlie.io) (free API key
@@ -144,10 +144,10 @@ abbreviations must match what's in `team_game_logs` for the same
 ## Fitting the probability mapping
 
 ```bash
-python scripts/fit_probability_mapping.py --sport nba --before 2023-10-01 \
+python scripts/fit_probability_mapping.py --sport nba --before 2025-10-01 \
     --engine-version v1.0 --out apila/mappings/nba_v1_0.json
 
-python scripts/fit_probability_mapping.py --sport soccer --before 2023-10-01 \
+python scripts/fit_probability_mapping.py --sport soccer --before 2025-10-01 \
     --three-way --engine-version v1.0 --out apila/mappings/soccer_v1_0.json
 ```
 
@@ -159,13 +159,17 @@ proposal section 4.7. Don't re-run this for a given engine version once
 you start evaluating against held-out data. `--three-way` fits the
 soccer-shaped multinomial mapping instead of the binary one.
 
+(`2025-10-01` above holds out the 2025-26 season against the `--seasons
+2022 2023 2024 2025` pull from the ingestion step — adjust both as
+actual current seasons move forward.)
+
 ## Running a backtest
 
 ```bash
-python scripts/run_backtest.py --sport nba --before 2023-10-01 \
+python scripts/run_backtest.py --sport nba --before 2025-10-01 \
     --mapping apila/mappings/nba_v1_0.json --stake 1.0
 
-python scripts/run_backtest.py --sport soccer --before 2023-10-01 \
+python scripts/run_backtest.py --sport soccer --before 2025-10-01 \
     --three-way --mapping apila/mappings/soccer_v1_0.json
 ```
 

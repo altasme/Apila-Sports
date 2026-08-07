@@ -18,9 +18,9 @@ tracking is a Phase 1 concern, once predictions lock before a game's
 market actually closes.
 
 Usage:
-    python scripts/run_backtest.py --sport nba --before 2023-10-01 \
+    python scripts/run_backtest.py --sport nba --before 2025-10-01 \
         --mapping apila/mappings/nba_v1_0.json --stake 1.0
-    python scripts/run_backtest.py --sport soccer --before 2023-10-01 \
+    python scripts/run_backtest.py --sport soccer --before 2025-10-01 \
         --three-way --mapping apila/mappings/soccer_v1_0.json
 """
 from __future__ import annotations
