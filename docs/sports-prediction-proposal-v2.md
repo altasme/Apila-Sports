@@ -1,4 +1,4 @@
-# Sports Prediction Platform — Proposal v2 (Backtest-First)
+# Apila Sports — Proposal v2 (Backtest-First)
 
 ## 0. What changed from v1, and why
 
