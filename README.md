@@ -141,6 +141,30 @@ API export, a public dataset, or a manually assembled file. Team
 abbreviations must match what's in `team_game_logs` for the same
 `--sport` or the join in `market_probability()` won't find the game.
 
+### NBA: the Kaggle route that actually worked
+
+Two paid odds APIs (odds-api.io, SharpAPI) were dead ends — one had an
+unresolved data gap even within its allowed tier, the other gates
+historical odds behind an Enterprise plan. What worked: the
+"nba-betting-data-october-2007-to-june-2024" Kaggle dataset
+(`cviaxmiwnptr`) — already American moneylines, already ISO dates, no
+account tier to fight with.
+
+```bash
+python scripts/reshape_kaggle_nba_odds.py path/to/nba_2008-2026.csv reshaped_odds.csv
+python scripts/ingest_closing_odds.py reshaped_odds.csv --sport nba --source kaggle-cviaxmiwnptr
+```
+
+The dataset's team codes (`gs`, `sa`, `utah`, `no`, `ny`, `wsh`, ...)
+don't match balldontlie's abbreviations (`GSW`, `SAS`, `UTA`, `NOP`,
+`NYK`, `WAS`, ...) — `reshape_kaggle_nba_odds.py`'s `TEAM_ABBR_MAP`
+handles the translation. It was built by diffing the actual distinct
+codes in both the dataset and this repo's already-ingested
+`team_game_logs`, not guessed. Historical relocated franchises (old
+Seattle, old New Jersey) are relabeled under their current code in the
+source data, so it's a clean 30-to-30 mapping with no era-dependent
+edge cases. See `tests/test_reshape_kaggle_nba_odds.py`.
+
 ## Fitting the probability mapping
 
 ```bash
