@@ -45,3 +45,21 @@ class TeamGameLog(Base):
     blk = Column(Float)
     tov = Column(Float)
     pf = Column(Float)
+
+
+class ClosingOdds(Base):
+    """Closing moneyline for one historical game — the market benchmark.
+
+    Keyed by (date, home, away) rather than a provider game id, since odds
+    data and stats data almost never share an id scheme; this join key is
+    the one thing every source agrees on.
+    """
+
+    __tablename__ = "closing_odds"
+
+    game_date = Column(Date, primary_key=True)
+    home_team_abbr = Column(String, primary_key=True)
+    away_team_abbr = Column(String, primary_key=True)
+    home_moneyline = Column(Integer, nullable=False)
+    away_moneyline = Column(Integer, nullable=False)
+    source = Column(String, nullable=False)
