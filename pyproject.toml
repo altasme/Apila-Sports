@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-ingest = ["nba_api>=1.4"]
+ingest = ["requests>=2.31"]
 dev = ["pytest>=7.0"]
 
 [tool.pytest.ini_options]

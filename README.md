@@ -91,13 +91,35 @@ pytest
 
 ```bash
 pip install -e .[ingest]
-python scripts/ingest_nba_games.py --seasons 2021-22 2022-23 2023-24
+python scripts/ingest_nba_games.py --seasons 2021 2022 2023 --api-key YOUR_KEY
 ```
 
-Pulls from `stats.nba.com` via `nba_api` — needs network access to that
-host, which isn't available from every environment (e.g. this repo's own
-dev sandbox can't reach it). Run it somewhere that can. Tags every row
-`sport="nba"`.
+Pulls from [balldontlie.io](https://app.balldontlie.io) (free API key
+required). This originally used `stats.nba.com` via `nba_api`, but that
+API blocks or silently hangs on requests from cloud/datacenter IPs (AWS,
+GCP, Azure) as anti-scraping protection — it doesn't error, it just times
+out, which makes it unusable from GitHub Codespaces, Actions, or most
+cloud sandboxes (confirmed against this repo's own dev sandbox and a real
+Codespaces run). balldontlie works from those environments.
+
+The tradeoff: balldontlie's `games` endpoint only has date, teams, and
+final score — no team box score stats (FGM/FGA/REB/AST/etc.), so those
+columns stay `NULL`. That's fine for everything currently computed here
+(`apila/rating.py` only uses points and win/loss) but limits future
+shooting-stat features from this source. Tags every row `sport="nba"`.
+
+Note `--seasons` takes season-*start* years now (`2023` = the 2023-24
+season), not the `"2023-24"` string format the old stats.nba.com version
+used. Team ids also come from balldontlie's own scheme — don't mix in
+rows from an old nba_api-based ingestion for the same `sport="nba"`, or
+the same real-world team will get split across two different `team_id`s.
+
+This was written from balldontlie's documented API contract, not a live
+call — this repo's dev sandbox has no external network access at all, not
+even to test it. Start with one recent season to sanity check before
+pulling several years; if a field name or the auth header format has
+drifted from what's here, it'll surface immediately as an ingestion
+error.
 
 There's no equivalent live-ingestion script for soccer yet — the data
 source is undetermined (see proposal section 4.2's options), so soccer
