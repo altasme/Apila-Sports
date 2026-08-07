@@ -205,3 +205,42 @@ simulation and reports ROI overall and by confidence tier. This is
 proposal section 4.9's metrics dashboard, and section 4.10's Go/No-Go gate
 is just reading these numbers honestly: ROI ≤ 0, or the model losing to
 the naive baselines, means stop.
+
+**First real run** (Kaggle NBA odds ingested above, 4 seasons of
+balldontlie game logs, `--before 2023-01-01` — the odds dataset's actual
+coverage turned out to stop at Jan 2023 despite its filename): 530
+train / 118 holdout games. Model beat both naive baselines on Brier and
+log loss, but not the market (expected), and the betting sim finished at
+ROI -3.5%. At n=118 holdout games / 107 bets, none of that is far enough
+from noise to call a real Go/No-Go verdict — see the sample-size caveat
+in proposal section 4.8. Treated as "pipeline validated end-to-end on
+real data," not as a verdict.
+
+## Running a stats-only backtest (no odds required)
+
+```bash
+python scripts/run_stats_backtest.py --sport nba --before 2025-10-01 \
+    --mapping apila/mappings/nba_v1_0.json
+
+python scripts/run_stats_backtest.py --sport soccer --before 2025-10-01 \
+    --three-way --mapping apila/mappings/soccer_v1_0.json
+```
+
+`run_backtest.py` only evaluates games with matched closing odds — if
+odds coverage doesn't reach the games you want to test (exactly what
+happened above), that shrinks the usable sample down to whatever sliver
+overlaps. This script drops the odds requirement (`build_game_records(...,
+require_odds=False)`) and reports accuracy/Brier/log loss against
+`home_always` and `better_record` over every game with a computable
+rating, regardless of odds coverage — the full multi-season holdout,
+not just the odds-covered slice. It prints how many holdout games also
+had matched odds, for reference.
+
+**This is not a substitute for `run_backtest.py`.** It can't compute ROI,
+market comparison, or run the betting simulation — those need real
+closing prices. Proposal section 2's actual success criteria require the
+market comparison; "beats naive baselines on accuracy/Brier/log loss" is
+necessary but explicitly not sufficient on its own (section 2's
+"non-goal: hitting some accuracy number"). Use this to check prediction
+quality is at least sane when odds coverage is the bottleneck, and come
+back to the real gate once odds coverage catches up.

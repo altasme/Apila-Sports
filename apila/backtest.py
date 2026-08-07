@@ -31,9 +31,13 @@ class GameRecord:
     rating_diff: float
     record_diff: float
     outcome: str  # "H" / "D" / "A"
-    home_moneyline: int
-    away_moneyline: int
+    home_moneyline: int | None
+    away_moneyline: int | None
     draw_moneyline: int | None
+
+    @property
+    def has_odds(self) -> bool:
+        return self.home_moneyline is not None
 
 
 def build_game_records(
@@ -42,12 +46,17 @@ def build_game_records(
     *,
     since: date | None = None,
     until: date | None = None,
+    require_odds: bool = True,
 ) -> list[GameRecord]:
-    """One record per game with both a rating_diff and closing odds.
+    """One record per game with a rating_diff, and closing odds when available.
 
-    Games missing either (not enough prior history for one of the teams,
-    or no odds ingested for that game) are silently skipped -- a caller
-    that needs to know why should query the store directly.
+    A game missing rating history for either team is always skipped -- there's
+    no prediction to evaluate without one. A game missing closing odds is
+    skipped too when `require_odds` is True (the default, and what betting
+    simulation needs). Pass `require_odds=False` to keep those games anyway,
+    with moneyline fields left None (`GameRecord.has_odds` is False) -- useful
+    for evaluating raw prediction quality (accuracy/Brier/log loss against
+    baselines) over a dataset wider than whatever odds happen to be ingested.
     """
     stmt = select(TeamGameLog).where(TeamGameLog.sport == sport).where(TeamGameLog.is_home.is_(True))
     if since is not None:
@@ -80,7 +89,13 @@ def build_game_records(
 
         market = store.market_probability(row.game_date, row.team_abbr, away.team_abbr, sport)
         if market is None:
-            continue  # no odds ingested for this game
+            if require_odds:
+                continue  # no odds ingested for this game
+            home_moneyline = away_moneyline = draw_moneyline = None
+        else:
+            home_moneyline = market.home_moneyline
+            away_moneyline = market.away_moneyline
+            draw_moneyline = market.draw_moneyline
 
         records.append(
             GameRecord(
@@ -94,9 +109,9 @@ def build_game_records(
                 rating_diff=diff,
                 record_diff=record_diff,
                 outcome=_OUTCOME_MAP[row.wl],
-                home_moneyline=market.home_moneyline,
-                away_moneyline=market.away_moneyline,
-                draw_moneyline=market.draw_moneyline,
+                home_moneyline=home_moneyline,
+                away_moneyline=away_moneyline,
+                draw_moneyline=draw_moneyline,
             )
         )
     return records

@@ -79,3 +79,53 @@ def test_build_game_records_skips_games_with_no_ingested_odds():
     # No ingest_odds call at all -- x2 has a computable rating_diff
     # (x1 is prior history) but no market to join against.
     assert build_game_records(store, "nba") == []
+
+
+def test_build_game_records_require_odds_false_keeps_games_without_a_market():
+    engine = get_engine(":memory:")
+    session = get_session(engine)
+    store = PointInTimeStore(session)
+
+    games = pd.DataFrame(
+        [
+            dict(
+                game_id="x1", team_id=1, sport="nba", season="2023-24",
+                game_date=date(2024, 1, 1), team_abbr="XXX", opponent_abbr="YYY",
+                is_home=True, wl="W", pts=100, plus_minus=10,
+            ),
+            dict(
+                game_id="x1", team_id=2, sport="nba", season="2023-24",
+                game_date=date(2024, 1, 1), team_abbr="YYY", opponent_abbr="XXX",
+                is_home=False, wl="L", pts=90, plus_minus=-10,
+            ),
+            dict(
+                game_id="x2", team_id=1, sport="nba", season="2023-24",
+                game_date=date(2024, 1, 3), team_abbr="XXX", opponent_abbr="YYY",
+                is_home=True, wl="W", pts=100, plus_minus=5,
+            ),
+            dict(
+                game_id="x2", team_id=2, sport="nba", season="2023-24",
+                game_date=date(2024, 1, 3), team_abbr="YYY", opponent_abbr="XXX",
+                is_home=False, wl="L", pts=95, plus_minus=-5,
+            ),
+        ]
+    )
+    store.ingest(games)
+
+    records = build_game_records(store, "nba", require_odds=False)
+
+    assert {r.game_id for r in records} == {"x2"}
+    assert records[0].has_odds is False
+    assert records[0].home_moneyline is None
+    assert records[0].away_moneyline is None
+    assert records[0].outcome == "H"
+
+
+def test_build_game_records_require_odds_false_still_reports_odds_when_present(store):
+    # Fixture games all have ingested odds -- require_odds=False should give
+    # the identical result to the default, just via the opt-out path.
+    with_odds_default = build_game_records(store, "nba")
+    with_odds_explicit = build_game_records(store, "nba", require_odds=False)
+
+    assert {r.game_id for r in with_odds_default} == {r.game_id for r in with_odds_explicit}
+    assert all(r.has_odds for r in with_odds_explicit)
