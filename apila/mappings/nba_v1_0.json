@@ -1,0 +1,7 @@
+{
+  "coef": 0.11226182406728479,
+  "intercept": 0.2666008244366078,
+  "engine_version": "v1.0",
+  "trained_on": "nba games before 2025-10-01",
+  "n_games": 3944
+}
