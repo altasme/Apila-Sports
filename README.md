@@ -244,3 +244,23 @@ necessary but explicitly not sufficient on its own (section 2's
 "non-goal: hitting some accuracy number"). Use this to check prediction
 quality is at least sane when odds coverage is the bottleneck, and come
 back to the real gate once odds coverage catches up.
+
+**First full-season stats-only run** (`apila/mappings/nba_v1_0.json`,
+fit on all 3,944 games before 2025-10-01, evaluated on the full 1,322-game
+2025-26 season as holdout — the same balldontlie data as above, no odds
+needed for this comparison):
+
+| | accuracy | Brier | log loss |
+|---|---|---|---|
+| model | 0.652 | 0.2184 | 0.6271 |
+| home_always | 0.555 | 0.2470 | 0.6870 |
+| better_record | 0.591 | 0.2387 | 0.6705 |
+
+Model beats both naive baselines on all three metrics, cleanly, at real
+scale — not the earlier small-sample/mixed read. This satisfies the
+"beats naive baselines on a proper scoring rule" piece of proposal
+section 2's success criteria. What it does *not* answer is the actual
+betting question (ROI, market comparison) — that still needs odds
+coverage that reaches 2025-26, which the current Kaggle source doesn't
+have (see above). Prediction quality: validated at scale. ROI: still
+pending better odds coverage.
