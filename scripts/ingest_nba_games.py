@@ -36,6 +36,7 @@ import argparse
 import os
 import sys
 import time
+from datetime import date
 from pathlib import Path
 
 import pandas as pd
@@ -108,7 +109,9 @@ def transform(games: list[dict], season: int) -> pd.DataFrame:
         if home_score == away_score:
             continue  # NBA games don't end in ties; equal scores usually mean incomplete data
 
-        game_date = game["date"][:10]  # "YYYY-MM-DDT00:00:00.000Z" -> "YYYY-MM-DD"
+        # "YYYY-MM-DDT00:00:00.000Z" -> a real date object (the store's
+        # Date column rejects a plain string).
+        game_date = date.fromisoformat(game["date"][:10])
 
         rows.append(
             dict(
