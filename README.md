@@ -7,6 +7,7 @@ Backtest-first sports prediction & betting-edge validation platform. See [`docs/
 **M0 — point-in-time feature store (basketball first): done.**
 **M1 — historical closing odds + devig: done.**
 **M2 — prediction engine + fitted probability mapping: done.**
+**M3 — betting simulation + baselines: done.**
 
 `apila/` holds the store: `team_game_logs` for stats, `closing_odds` for
 the market benchmark. `PointInTimeStore` only ever answers "team rating as
@@ -18,8 +19,8 @@ same-day game had leaked in.
 
 `apila/odds.py` converts American odds to devigged implied probability
 (`devig_moneyline`), and `PointInTimeStore.market_probability(date, home,
-away)` joins a historical game to its closing line — the number every
-model prediction has to beat. See `tests/test_odds.py` and
+away, sport)` joins a historical game to its closing line — the number
+every model prediction has to beat. See `tests/test_odds.py` and
 `tests/test_market_probability.py`.
 
 `apila/rating.py` combines season and recent-form point differential into
@@ -30,6 +31,54 @@ home_win)` pairs, then freezes it; nothing hand-tunes this curve.
 `apila/prediction.py`'s `PredictionEngine` combines a store and a frozen
 mapping into `.predict(home, away, as_of)`. See `tests/test_rating.py`,
 `tests/test_calibration.py`, `tests/test_prediction.py`.
+
+`apila/baselines.py` fits the "better record" baseline with the same
+logistic machinery as the real engine (never hand-drawn) and computes the
+"home always" baseline as the training set's actual home-win rate.
+`apila/metrics.py` scores every candidate — model, baselines, and the
+devigged market — on accuracy, Brier score, and log loss, so a model can't
+look good just by picking favorites (proposal section 3).
+`apila/simulate.py` runs the flat-stake betting simulation: bet a side
+only when its model probability beats its break-even price, track ROI
+overall and by confidence tier (`apila/tiers.py`). `apila/backtest.py`
+assembles the per-game records (rating diff, actual outcome, closing
+odds) that both the fitting script and the backtest script walk.
+`scripts/run_backtest.py` ties it all together and prints the report. See
+`tests/test_baselines.py`, `tests/test_metrics.py`, `tests/test_tiers.py`,
+`tests/test_simulate.py`, `tests/test_backtest.py`.
+
+**CLV is deliberately not reported.** The store only ever holds the
+closing price (M1 ingests closing odds specifically), and CLV requires
+comparing an entry price against that close — there's no entry price in a
+backtest built this way. Real CLV tracking is a Phase 1 concern, once
+predictions lock live before a game's market actually closes.
+
+## Multi-sport support
+
+The schema and every store/rating/prediction method are sport-scoped:
+`team_id` is only unique *within* a sport, so `sport` is a required
+argument almost everywhere (`store.team_rating_asof(team_id, sport,
+as_of)`, etc.) — this is deliberate, not an oversight, since silently
+mixing one sport's games into another's rating would be a much worse bug
+than a required parameter.
+
+Two market shapes are supported:
+- **Two-outcome** (basketball, MLB moneyline): `wl` is `W`/`L`,
+  `ClosingOdds.draw_moneyline` is `NULL`, `PredictionEngine` +
+  `ProbabilityMapping` produce a single home-win probability.
+- **Three-outcome** (soccer 1X2): `wl` can be `W`/`D`/`L`,
+  `ClosingOdds.draw_moneyline` is populated, `ThreeWayPredictionEngine` +
+  `ThreeWayProbabilityMapping` (multinomial logistic regression) produce
+  `(home, draw, away)` probabilities. `apila/odds.py`'s `devig_multiplicative`
+  generalizes to any number of outcomes, and `apila/simulate.py`'s betting
+  sim takes a game as a list of sides, so it's N-way from the start —
+  basketball just happens to pass two.
+
+Test fixtures cover both: `tests/fixtures/sample_game_logs.csv` /
+`sample_closing_odds.csv` (`sport="nba"`, no draws) and
+`sample_soccer_matches.csv` / `sample_soccer_odds.csv` (`sport="soccer"`,
+includes draws and all three outcomes). The `store` fixture in
+`tests/conftest.py` loads both into one store to exercise sport isolation.
 
 ## Setup
 
@@ -47,31 +96,63 @@ python scripts/ingest_nba_games.py --seasons 2021-22 2022-23 2023-24
 
 Pulls from `stats.nba.com` via `nba_api` — needs network access to that
 host, which isn't available from every environment (e.g. this repo's own
-dev sandbox can't reach it). Run it somewhere that can.
+dev sandbox can't reach it). Run it somewhere that can. Tags every row
+`sport="nba"`.
+
+There's no equivalent live-ingestion script for soccer yet — the data
+source is undetermined (see proposal section 4.2's options), so soccer
+fixtures for now are the hand-built test data in `tests/fixtures/`. The
+store, rating, calibration, and simulation code are already sport-generic
+and ready for it once a source is picked.
 
 ## Ingesting closing odds
 
 ```bash
-python scripts/ingest_closing_odds.py path/to/odds.csv --source kaggle-nba-odds
+python scripts/ingest_closing_odds.py path/to/odds.csv --sport nba --source kaggle-nba-odds
+python scripts/ingest_closing_odds.py path/to/1x2.csv --sport soccer --source my-soccer-odds
 ```
 
 There's no free, reliable historical-odds API, so this takes a CSV
 (`game_date, home_team_abbr, away_team_abbr, home_moneyline,
-away_moneyline`) sourced from wherever you land per proposal section 4.2 —
-a paid API export, a public dataset, or a manually assembled file. Team
-abbreviations must match what's in `team_game_logs` or the join in
-`market_probability()` won't find the game.
+away_moneyline`, plus optional `draw_moneyline` for a three-outcome
+market) sourced from wherever you land per proposal section 4.2 — a paid
+API export, a public dataset, or a manually assembled file. Team
+abbreviations must match what's in `team_game_logs` for the same
+`--sport` or the join in `market_probability()` won't find the game.
 
 ## Fitting the probability mapping
 
 ```bash
-python scripts/fit_probability_mapping.py --before 2023-10-01 \
-    --engine-version v1.0 --out apila/mappings/v1_0.json
+python scripts/fit_probability_mapping.py --sport nba --before 2023-10-01 \
+    --engine-version v1.0 --out apila/mappings/nba_v1_0.json
+
+python scripts/fit_probability_mapping.py --sport soccer --before 2023-10-01 \
+    --three-way --engine-version v1.0 --out apila/mappings/soccer_v1_0.json
 ```
 
-Walks every game in `team_game_logs`, computes each team's rating as-of
-that game's date (so a game can never leak into its own training label),
-and fits/freezes the mapping on games strictly before `--before`. Point
+Walks every game for that sport, computes each team's rating as-of that
+game's date (so a game can never leak into its own training label), and
+fits/freezes the mapping on games strictly before `--before`. Point
 `--before` at the start of whatever season you're holding out — see
 proposal section 4.7. Don't re-run this for a given engine version once
-you start evaluating against held-out data.
+you start evaluating against held-out data. `--three-way` fits the
+soccer-shaped multinomial mapping instead of the binary one.
+
+## Running a backtest
+
+```bash
+python scripts/run_backtest.py --sport nba --before 2023-10-01 \
+    --mapping apila/mappings/nba_v1_0.json --stake 1.0
+
+python scripts/run_backtest.py --sport soccer --before 2023-10-01 \
+    --three-way --mapping apila/mappings/soccer_v1_0.json
+```
+
+Evaluates only the holdout set (games on or after `--before`); fits the
+naive baselines on the train split with the same cutoff so nothing leaks.
+Prints accuracy/Brier/log loss for the model against `home_always`,
+`better_record`, and the devigged market, then runs the flat-stake betting
+simulation and reports ROI overall and by confidence tier. This is
+proposal section 4.9's metrics dashboard, and section 4.10's Go/No-Go gate
+is just reading these numbers honestly: ROI ≤ 0, or the model losing to
+the naive baselines, means stop.

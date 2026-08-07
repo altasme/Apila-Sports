@@ -5,23 +5,25 @@ from datetime import date
 import pytest
 
 TEAM = 1
+SPORT = "nba"
 
 
 def test_as_of_excludes_same_day_and_future_games(store):
-    games = store.team_games_before(TEAM, as_of=date(2024, 1, 5))
+    games = store.team_games_before(TEAM, SPORT, as_of=date(2024, 1, 5))
     assert set(games["game_id"]) == {"g1", "g2"}
 
 
 def test_no_games_before_first_game_returns_none(store):
-    assert store.team_rating_asof(TEAM, as_of=date(2024, 1, 1)) is None
+    assert store.team_rating_asof(TEAM, SPORT, as_of=date(2024, 1, 1)) is None
 
 
 def test_rating_matches_hand_computed_values(store):
-    rating = store.team_rating_asof(TEAM, as_of=date(2024, 1, 9))
+    rating = store.team_rating_asof(TEAM, SPORT, as_of=date(2024, 1, 9))
 
     # g1 W 100/+10, g2 L 95/-5, g3 W 110/+15, g4 W 105/+5 -- g5 excluded (same day)
     assert rating.games_played == 4
     assert rating.wins == 3
+    assert rating.draws == 0
     assert rating.losses == 1
     assert rating.win_pct == pytest.approx(0.75)
     assert rating.ppg == pytest.approx((100 + 95 + 110 + 105) / 4)
@@ -37,7 +39,7 @@ def test_future_game_never_leaks_into_rating(store):
     catching before it reaches a backtest.
     """
     as_of = date(2024, 1, 5)
-    rating = store.team_rating_asof(TEAM, as_of=as_of)
+    rating = store.team_rating_asof(TEAM, SPORT, as_of=as_of)
 
     # Correct: only g1 (W, 100) and g2 (L, 95) precede 2024-01-05.
     assert rating.games_played == 2
@@ -51,5 +53,5 @@ def test_future_game_never_leaks_into_rating(store):
 
 
 def test_limit_returns_most_recent_games_first(store):
-    games = store.team_games_before(TEAM, as_of=date(2024, 1, 9), limit=2)
+    games = store.team_games_before(TEAM, SPORT, as_of=date(2024, 1, 9), limit=2)
     assert list(games["game_id"]) == ["g4", "g3"]

@@ -20,18 +20,18 @@ def composite_rating(rating: TeamRating) -> float:
     return SEASON_WEIGHT * rating.point_diff + RECENT_FORM_WEIGHT * recent
 
 
-def team_rating(store: PointInTimeStore, team_id: int, as_of: date) -> float | None:
-    rating = store.team_rating_asof(team_id, as_of)
+def team_rating(store: PointInTimeStore, team_id: int, sport: str, as_of: date) -> float | None:
+    rating = store.team_rating_asof(team_id, sport, as_of)
     if rating is None:
         return None
     return composite_rating(rating)
 
 
 def rating_diff(
-    store: PointInTimeStore, home_team_id: int, away_team_id: int, as_of: date
+    store: PointInTimeStore, home_team_id: int, away_team_id: int, sport: str, as_of: date
 ) -> float | None:
-    home = team_rating(store, home_team_id, as_of)
-    away = team_rating(store, away_team_id, as_of)
+    home = team_rating(store, home_team_id, sport, as_of)
+    away = team_rating(store, away_team_id, sport, as_of)
     if home is None or away is None:
         return None
     return home - away

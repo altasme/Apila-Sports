@@ -5,6 +5,7 @@ import pytest
 from apila.odds import (
     american_to_decimal,
     american_to_implied_prob,
+    devig_1x2,
     devig_moneyline,
     devig_multiplicative,
 )
@@ -45,3 +46,18 @@ def test_devig_moneyline_favorite_underdog_sums_to_one():
 def test_devig_multiplicative_rejects_nonpositive_total():
     with pytest.raises(ValueError):
         devig_multiplicative(0, 0)
+
+
+def test_devig_multiplicative_handles_three_outcomes():
+    # Symmetric three-way pick-em should land at exactly 1/3 each.
+    p = american_to_implied_prob(200)  # same price on all three sides
+    home, draw, away = devig_multiplicative(p, p, p)
+    assert home == pytest.approx(1 / 3)
+    assert draw == pytest.approx(1 / 3)
+    assert away == pytest.approx(1 / 3)
+
+
+def test_devig_1x2_sums_to_one_and_orders_by_favorite():
+    home, draw, away = devig_1x2(-120, 220, 280)
+    assert home + draw + away == pytest.approx(1.0)
+    assert home > draw > away  # -120 favorite, then the draw, then the +280 underdog

@@ -20,14 +20,15 @@ class TeamGameLog(Base):
 
     game_id = Column(String, primary_key=True)
     team_id = Column(Integer, primary_key=True)
+    sport = Column(String, primary_key=True)  # e.g. "nba", "soccer" -- team_id is only unique within a sport
     season = Column(String, nullable=False)
     game_date = Column(Date, nullable=False, index=True)
     team_abbr = Column(String, nullable=False)
     opponent_abbr = Column(String, nullable=False)
     is_home = Column(Boolean, nullable=False)
-    wl = Column(String, nullable=False)
-    pts = Column(Integer, nullable=False)
-    plus_minus = Column(Float, nullable=False)
+    wl = Column(String, nullable=False)  # "W" / "L", or "D" for a draw (soccer)
+    pts = Column(Integer, nullable=False)  # goals, for soccer
+    plus_minus = Column(Float, nullable=False)  # goal difference, for soccer
     fgm = Column(Float)
     fga = Column(Float)
     fg_pct = Column(Float)
@@ -48,11 +49,16 @@ class TeamGameLog(Base):
 
 
 class ClosingOdds(Base):
-    """Closing moneyline for one historical game — the market benchmark.
+    """Closing price for one historical game — the market benchmark.
 
-    Keyed by (date, home, away) rather than a provider game id, since odds
-    data and stats data almost never share an id scheme; this join key is
-    the one thing every source agrees on.
+    Keyed by (date, home, away, sport) rather than a provider game id,
+    since odds data and stats data almost never share an id scheme; this
+    join key is the one thing every source agrees on.
+
+    `draw_moneyline` is null for two-outcome markets (basketball, MLB
+    moneyline) and populated for three-outcome markets (soccer 1X2). Its
+    presence is what tells the store which devig math to use — see
+    `PointInTimeStore.market_probability`.
     """
 
     __tablename__ = "closing_odds"
@@ -60,6 +66,8 @@ class ClosingOdds(Base):
     game_date = Column(Date, primary_key=True)
     home_team_abbr = Column(String, primary_key=True)
     away_team_abbr = Column(String, primary_key=True)
+    sport = Column(String, primary_key=True)
     home_moneyline = Column(Integer, nullable=False)
     away_moneyline = Column(Integer, nullable=False)
+    draw_moneyline = Column(Integer, nullable=True)
     source = Column(String, nullable=False)

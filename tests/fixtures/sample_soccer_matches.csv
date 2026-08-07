@@ -1,0 +1,15 @@
+game_id,team_id,sport,season,game_date,team_abbr,opponent_abbr,is_home,wl,pts,plus_minus
+m1,101,soccer,2023-24,2024-02-01,CCC,DDD,True,W,2,1
+m1,102,soccer,2023-24,2024-02-01,DDD,CCC,False,L,1,-1
+m2,102,soccer,2023-24,2024-02-04,DDD,CCC,True,D,1,0
+m2,101,soccer,2023-24,2024-02-04,CCC,DDD,False,D,1,0
+m3,101,soccer,2023-24,2024-02-08,CCC,DDD,True,D,3,0
+m3,102,soccer,2023-24,2024-02-08,DDD,CCC,False,D,3,0
+m4,102,soccer,2023-24,2024-02-11,DDD,CCC,True,W,2,2
+m4,101,soccer,2023-24,2024-02-11,CCC,DDD,False,L,0,-2
+m5,101,soccer,2023-24,2024-02-15,CCC,DDD,True,W,1,1
+m5,102,soccer,2023-24,2024-02-15,DDD,CCC,False,L,0,-1
+m6,101,soccer,2023-24,2024-02-18,CCC,DDD,True,L,0,-2
+m6,102,soccer,2023-24,2024-02-18,DDD,CCC,False,W,2,2
+m7,102,soccer,2023-24,2024-02-22,DDD,CCC,True,D,1,0
+m7,101,soccer,2023-24,2024-02-22,CCC,DDD,False,D,1,0

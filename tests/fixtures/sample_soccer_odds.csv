@@ -1,0 +1,8 @@
+game_date,home_team_abbr,away_team_abbr,sport,home_moneyline,draw_moneyline,away_moneyline,source
+2024-02-01,CCC,DDD,soccer,-120,220,280,test_fixture
+2024-02-04,DDD,CCC,soccer,150,210,170,test_fixture
+2024-02-08,CCC,DDD,soccer,-110,230,300,test_fixture
+2024-02-11,DDD,CCC,soccer,140,215,160,test_fixture
+2024-02-15,CCC,DDD,soccer,-130,240,320,test_fixture
+2024-02-18,CCC,DDD,soccer,-125,235,300,test_fixture
+2024-02-22,DDD,CCC,soccer,160,215,155,test_fixture

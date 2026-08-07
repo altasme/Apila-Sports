@@ -1,6 +1,6 @@
-game_date,home_team_abbr,away_team_abbr,home_moneyline,away_moneyline,source
-2024-01-01,AAA,BBB,-150,130,test_fixture
-2024-01-03,BBB,AAA,-110,-110,test_fixture
-2024-01-05,AAA,BBB,-200,170,test_fixture
-2024-01-07,BBB,AAA,105,-125,test_fixture
-2024-01-09,AAA,BBB,-140,120,test_fixture
+game_date,home_team_abbr,away_team_abbr,sport,home_moneyline,away_moneyline,source
+2024-01-01,AAA,BBB,nba,-150,130,test_fixture
+2024-01-03,BBB,AAA,nba,-110,-110,test_fixture
+2024-01-05,AAA,BBB,nba,-200,170,test_fixture
+2024-01-07,BBB,AAA,nba,105,-125,test_fixture
+2024-01-09,AAA,BBB,nba,-140,120,test_fixture

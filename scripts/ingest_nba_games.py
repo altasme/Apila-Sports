@@ -67,6 +67,7 @@ def transform(df: pd.DataFrame) -> pd.DataFrame:
     df["game_date"] = pd.to_datetime(df["game_date"]).dt.date
     df["is_home"] = ~df["matchup"].str.contains("@")
     df["opponent_abbr"] = df["matchup"].str.extract(r"(?:@|vs\.)\s*(\w+)$")
+    df["sport"] = "nba"
     return df.drop(columns=["matchup"])
 
 
